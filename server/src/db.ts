@@ -56,9 +56,14 @@ function initSchema(): void {
       FOREIGN KEY (datasource_id) REFERENCES datasources(id) ON DELETE SET NULL
     );
 
-    -- Migration: add view_config if upgrading from older schema
-    ALTER TABLE tiles ADD COLUMN view_config TEXT NOT NULL DEFAULT '{}';
   `);
+
+  // Migration: add view_config column only if it doesn't exist yet
+  const cols = db.pragma('table_info(tiles)') as any[];
+  const hasViewConfig = cols.some((c: any) => c.name === 'view_config');
+  if (!hasViewConfig) {
+    db.exec(`ALTER TABLE tiles ADD COLUMN view_config TEXT NOT NULL DEFAULT '{}'`);
+  }
 }
 
 export function closeDb(): void {
