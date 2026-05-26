@@ -1,107 +1,111 @@
 import React, { useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
-import type { QueryResult, ViewType } from '../types';
+import type { QueryResult, ViewType, ChartConfig } from '../types';
 
 interface Props {
   data: QueryResult;
   chartType: ViewType;
+  config?: ChartConfig;
 }
 
-const DARK_THEME = {
-  textStyle: { color: '#9ca3af' },
-  backgroundColor: 'transparent',
-};
+const COLORS = ['#6c5ce7', '#00cec9', '#fd79a8', '#fdcb6e', '#e17055', '#74b9ff'];
 
-export function ChartView({ data, chartType }: Props) {
+export function ChartView({ data, chartType, config }: Props) {
   const option = useMemo(() => {
-    const columns = data.columns;
-    const rows = data.rows;
+    const { columns, rows } = data;
+    if (columns.length === 0 || rows.length === 0) return null;
 
-    if (columns.length < 1) return null;
+    // Determine which columns to use
+    const categoryCol = config?.category || columns[0];
+    const seriesCols = config?.series?.filter(Boolean) ||
+      columns.filter((c) => c !== categoryCol).slice(0, 1) ||
+      [columns[columns.length - 1]];
 
-    // Try to auto-detect: first col = category/label, rest = values
-    const labelCol = columns[0];
-    const valueCols = columns.length > 1 ? columns.slice(1) : [columns[0]];
+    if (seriesCols.length === 0) return null;
 
-    const labels = rows.map((r) => String(r[labelCol] ?? ''));
-    const isNumeric = (v: unknown) => v !== null && v !== undefined && !isNaN(Number(v));
-
-    // Common ECharts base config
-    const baseGrid = { left: '3%', right: '4%', top: 8, bottom: 24, containLabel: true };
+    const labels = rows.map((r) => String(r[categoryCol] ?? ''));
 
     if (chartType === 'pie') {
-      const pieData = rows.map((r) => ({
-        name: String(r[labelCol] ?? ''),
-        value: Number(r[valueCols[0]] ?? 0),
+      const valCol = seriesCols[0];
+      const pieData = rows.map((r, i) => ({
+        name: String(r[categoryCol] ?? ''),
+        value: Number(r[valCol]) || 0,
+        itemStyle: { color: COLORS[i % COLORS.length] },
       }));
       return {
-        ...DARK_THEME,
-        tooltip: { trigger: 'item' },
-        series: [
-          {
-            type: 'pie',
-            radius: ['40%', '70%'],
-            center: ['50%', '50%'],
-            data: pieData,
-            label: { color: '#9ca3af', fontSize: 10 },
-            emphasis: {
-              itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.5)' },
-            },
+        backgroundColor: 'transparent',
+        tooltip: {
+          trigger: 'item',
+          formatter: '{b}: {c} ({d}%)',
+          textStyle: { fontSize: 11 },
+        },
+        series: [{
+          type: 'pie',
+          radius: ['40%', '68%'],
+          center: ['50%', '50%'],
+          data: pieData,
+          label: { color: '#9ca3af', fontSize: 10 },
+          emphasis: {
+            itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0,0,0,0.5)' },
           },
-        ],
+        }],
       };
     }
 
     // Bar, Line, Area, Scatter
-    const series = valueCols.map((col, idx) => {
-      const colors = ['#6c5ce7', '#00cec9', '#fd79a8', '#fdcb6e', '#e17055', '#74b9ff'];
+    const series = seriesCols.map((col, idx) => {
       const base: any = {
         name: col,
         type: chartType === 'area' ? 'line' : chartType,
         data: rows.map((r) => Number(r[col]) || 0),
-        smooth: chartType !== 'scatter',
-        itemStyle: { color: colors[idx % colors.length] },
-        lineStyle: { color: colors[idx % colors.length] },
+        smooth: chartType !== 'scatter' && chartType !== 'bar',
+        itemStyle: { color: COLORS[idx % COLORS.length] },
+        lineStyle: { color: COLORS[idx % COLORS.length], width: 2 },
       };
       if (chartType === 'area') {
-        base.areaStyle = { opacity: 0.15 };
-        base.lineStyle = { ...base.lineStyle, width: 2 };
+        base.areaStyle = { color: COLORS[idx % COLORS.length], opacity: 0.15 };
       }
       return base;
     });
 
     return {
-      ...DARK_THEME,
-      tooltip: { trigger: 'axis' },
+      backgroundColor: 'transparent',
+      tooltip: {
+        trigger: 'axis',
+        textStyle: { fontSize: 11 },
+      },
       legend: {
-        data: valueCols,
+        data: seriesCols,
         textStyle: { color: '#9ca3af', fontSize: 10 },
         bottom: 0,
       },
-      grid: baseGrid,
+      grid: { left: '3%', right: '4%', top: 8, bottom: 28, containLabel: true },
       xAxis: {
         type: 'category',
         data: labels,
         axisLabel: { color: '#6b7280', fontSize: 10, rotate: labels.length > 8 ? 30 : 0 },
         axisLine: { lineStyle: { color: '#374151' } },
+        axisTick: { show: false },
       },
       yAxis: {
         type: 'value',
         axisLabel: { color: '#6b7280', fontSize: 10 },
-        splitLine: { lineStyle: { color: '#1f2937' } },
+        splitLine: { lineStyle: { color: '#1f2937', type: 'dashed' } },
       },
       series,
     };
-  }, [data, chartType]);
+  }, [data, chartType, config]);
 
-  if (!option) return <div className="text-xs text-gray-600 p-4">Insufficient data for chart</div>;
+  if (!option) {
+    return <div className="flex items-center justify-center h-full text-xs text-gray-600">Insufficient data for chart</div>;
+  }
 
   return (
     <ReactECharts
       option={option}
       style={{ height: '100%', width: '100%' }}
       opts={{ renderer: 'svg' }}
-      theme="dark"
+      notMerge
     />
   );
 }

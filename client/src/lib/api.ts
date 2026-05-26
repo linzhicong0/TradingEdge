@@ -36,7 +36,7 @@ export const api = {
   // Tiles
   createTile: (dashboardId: string, tile: {
     title?: string; query?: string; datasource_id?: string | null;
-    view_type?: string; pos_x?: number; pos_y?: number; col_span?: number; row_span?: number;
+    view_type?: string; view_config?: any; pos_x?: number; pos_y?: number; col_span?: number; row_span?: number;
   }) => request<any>(`/dashboards/${dashboardId}/tiles`, { method: 'POST', body: JSON.stringify(tile) }),
   updateTile: (dashboardId: string, tileId: string, updates: any) =>
     request<any>(`/dashboards/${dashboardId}/tiles/${tileId}`, { method: 'PUT', body: JSON.stringify(updates) }),

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { TableView } from './TableView';
 import { ChartView } from './ChartView';
 import { api } from '../lib/api';
-import type { Tile, QueryResult } from '../types';
+import type { Tile, QueryResult, ChartConfig } from '../types';
 
 interface Props {
   tile: Tile;
@@ -77,5 +77,5 @@ export function TileContent({ tile }: Props) {
     return <TableView data={data} />;
   }
 
-  return <ChartView data={data} chartType={tile.view_type} />;
+  return <ChartView data={data} chartType={tile.view_type} config={tile.view_config} />;
 }

@@ -93,6 +93,7 @@ router.post('/:dashboardId/tiles', (req: Request, res: Response) => {
     query = 'SELECT 1',
     datasource_id = null,
     view_type = 'table',
+    view_config = '{}',
     pos_x = 0,
     pos_y = 0,
     col_span = 3,
@@ -100,9 +101,9 @@ router.post('/:dashboardId/tiles', (req: Request, res: Response) => {
   } = req.body;
 
   db.prepare(`
-    INSERT INTO tiles (id, dashboard_id, title, query, datasource_id, view_type, pos_x, pos_y, col_span, row_span)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(id, dashboardId, title, query, datasource_id, view_type, pos_x, pos_y, col_span, row_span);
+    INSERT INTO tiles (id, dashboard_id, title, query, datasource_id, view_type, view_config, pos_x, pos_y, col_span, row_span)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(id, dashboardId, title, query, datasource_id, view_type, typeof view_config === 'string' ? view_config : JSON.stringify(view_config), pos_x, pos_y, col_span, row_span);
 
   const tile = db.prepare('SELECT * FROM tiles WHERE id = ?').get(id);
   res.status(201).json(tile);
@@ -123,16 +124,18 @@ router.put('/:dashboardId/tiles/:tileId', (req: Request, res: Response) => {
     query = existing.query,
     datasource_id = existing.datasource_id,
     view_type = existing.view_type,
+    view_config = existing.view_config,
     pos_x = existing.pos_x,
     pos_y = existing.pos_y,
     col_span = existing.col_span,
     row_span = existing.row_span
   } = req.body;
 
+  const vc = typeof view_config === 'string' ? view_config : JSON.stringify(view_config);
   db.prepare(`
-    UPDATE tiles SET title=?, query=?, datasource_id=?, view_type=?, pos_x=?, pos_y=?, col_span=?, row_span=?, updated_at=datetime('now')
+    UPDATE tiles SET title=?, query=?, datasource_id=?, view_type=?, view_config=?, pos_x=?, pos_y=?, col_span=?, row_span=?, updated_at=datetime('now')
     WHERE id=?
-  `).run(title, query, datasource_id, view_type, pos_x, pos_y, col_span, row_span, req.params.tileId);
+  `).run(title, query, datasource_id, view_type, vc, pos_x, pos_y, col_span, row_span, req.params.tileId);
 
   const tile = db.prepare('SELECT * FROM tiles WHERE id = ?').get(req.params.tileId);
   res.json(tile);

@@ -45,6 +45,7 @@ function initSchema(): void {
       query TEXT NOT NULL DEFAULT 'SELECT 1',
       datasource_id TEXT,
       view_type TEXT NOT NULL DEFAULT 'table',
+      view_config TEXT NOT NULL DEFAULT '{}',
       col_span INTEGER NOT NULL DEFAULT 3,
       row_span INTEGER NOT NULL DEFAULT 2,
       pos_x INTEGER NOT NULL DEFAULT 0,
@@ -54,6 +55,9 @@ function initSchema(): void {
       FOREIGN KEY (dashboard_id) REFERENCES dashboards(id) ON DELETE CASCADE,
       FOREIGN KEY (datasource_id) REFERENCES datasources(id) ON DELETE SET NULL
     );
+
+    -- Migration: add view_config if upgrading from older schema
+    ALTER TABLE tiles ADD COLUMN view_config TEXT NOT NULL DEFAULT '{}';
   `);
 }
 

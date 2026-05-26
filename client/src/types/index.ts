@@ -22,6 +22,12 @@ export interface DashboardWithTiles extends Dashboard {
   tiles: Tile[];
 }
 
+/** Maps query result columns to chart axes */
+export interface ChartConfig {
+  category?: string;      // X-axis / pie label column
+  series?: string[];       // Y-axis value columns (multiple = multi-series)
+}
+
 export interface Tile {
   id: string;
   dashboard_id: string;
@@ -29,6 +35,7 @@ export interface Tile {
   query: string;
   datasource_id: string | null;
   view_type: ViewType;
+  view_config: ChartConfig;
   pos_x: number;
   pos_y: number;
   col_span: number;
@@ -54,3 +61,5 @@ export const VIEW_TYPE_LABELS: Record<ViewType, string> = {
 };
 
 export const VIEW_TYPES: ViewType[] = ['table', 'bar', 'line', 'pie', 'area', 'scatter'];
+
+export const CHART_VIEW_TYPES: ViewType[] = ['bar', 'line', 'pie', 'area', 'scatter'];
